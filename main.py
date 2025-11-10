@@ -19,7 +19,7 @@ Features:
 
 Modules:
 1. main : core exercises and review. Since the code for review relies heavily on functions defined in the main script, I decided to leave it there instead of moving it to a separate module.
-2. pronunciaition_api : handling of the Free Dictionary API to reproduce the sound of phonemes if available """
+2. pronunciation_api : handling of the Free Dictionary API to reproduce the sound of phonemes if available """
 
 import random
 from phoneme_api import get_phoneme
@@ -48,6 +48,14 @@ phonemes = {'/ɔ:/' :
 
 
 def learn(phoneme):
+    """Play sound of phoneme if available through the 'get_phoneme()' API and show its commom spelling patterns.
+
+    Args:
+        phoneme (str): phoneme randomly picked from the 'phonemes' dictionary
+
+    Returns:
+        bool: True if sound is available, False if not
+    """
     print(f'New phoneme = {phoneme}\n')
     pron = get_phoneme(phoneme)
     if not pron:
@@ -61,11 +69,15 @@ def learn(phoneme):
         
 
 def spell(phoneme, pron):
-    if not pron:
-        print('Write the word that corresponds to the following phonemes. You have 5 attempts')
-    else:
+    """If the sound is available through the 'get_phoneme()' API, there is a chance to listen to it again, before starting the spelling tests for the target phoneme.
+
+    Args:
+        phoneme (str): phoneme being studied
+        pron (bool): True if the sound from 'get_phoneme()' API is available, False if not
+    """
+    if pron:
         while True:
-            ask = input('Write the word that corresponds to the following phonemes. You have 5 attempts. Do you want to listen to the target phoneme one more time? (y/n): ').lower().strip()
+            ask = input('Do you want to listen to the phoneme one more time before we start? (y/n): ').lower().strip()
             if ask == 'y':
                 get_phoneme(phoneme)
                 break
@@ -75,39 +87,66 @@ def spell(phoneme, pron):
                 print('Invalid entry. Only y/n')
             
     words = random.sample(list(phonemes[phoneme]['spelling']), k = 5)
-    retry = []
-    spell_tests(words, retry, phoneme)
+    
+    spell_tests(words, phoneme)
 
     
-def spell_tests(words_list, retry_list, phoneme):
+def spell_tests(words_list, phoneme):
+    """For each word to learn, 'test_no_help()' first and 'test_with_help()' after if needed.
+
+    Args:
+        words_list (list): random selection of words to test
+        phoneme (str): phoneme being studied
+    """
+    retry = []
+    print('Write the word that corresponds to the following phonemes. You have 5 attempts')
     
     for index, word in enumerate(words_list):
         print(f'{index + 1}. How do you spell {word}?')
-        test_no_help(word, retry_list, phoneme)
+        test_no_help(word, retry, phoneme)
     
-    if retry_list:
-        for word in retry_list:
+    if retry:
+        for word in retry:
             test_with_help(word, phoneme)
                 
     
-def test_no_help(word, retry, phoneme):
+def test_no_help(word, retry_list, phoneme):
+    """Test spelling knowledge without any help.
+    
+    5 attempts to pass the correct spelling of the word, which is the first element of the relative tuple in the 'phonemes' dictionary. 
+    After 5 failed attempts, the word is appended to a 'retry_list' for future furher testing.
+
+    Args:
+        word (str): phonemic transcription of the word we need to guess the spelling of
+        retry_list (list): list containing words not guessed after 5 attempts
+        phoneme (str): phoneme being studied
+    """
     attempts = 5
     while attempts > 0:
         answer = input(f'{attempts}. ').lower().strip()
         solution = phonemes[phoneme]['spelling'][word][0]
         if answer == solution:
-            print('Yes\n')
+            print('Yes!\n')
             return
         if not answer.isalpha():
             print('Only letters')
             continue
         else:
             attempts -= 1
-    retry.append(word)
+    retry_list.append(word)
     print()
   
     
 def test_with_help(word, phoneme):
+    """Test spelling with the help of prompts.
+    
+    If words are not correctly guessed in 'test_no_help()', they are tested here through the choice between the 3 prompts contained in the relative tuples in the 'phonemes' dictionary. 
+    Only those 3 words are allowed as answers. If the attempts fail, the solution is given by the app.
+
+    Args:
+        word (str): phonemic transcription of the word we need to guess the spelling of
+        phoneme (str): phoneme being studied
+    """
     attempts = 2
     print('Type in the correct spelling out of these three options. You have 2 attempts\n')
     print(word, end = '\n\n')
@@ -129,42 +168,61 @@ def test_with_help(word, phoneme):
 
 
 def homophones(phoneme):
-    phoneme_combos = list(phonemes[phoneme]['homophones'])
-    if len(phoneme_combos) > 5:
-        phoneme_combos = random.sample(phoneme_combos, k = 5)
+    """Create a sample list of homophones to be tested.
+
+    Args:
+        phoneme (str): phoneme being studied
+    """
+    homoph_selection = list(phonemes[phoneme]['homophones'])
+    if len(homoph_selection) > 5:
+        homoph_selection = random.sample(homoph_selection, k = 5)
     else:
-        random.shuffle(phoneme_combos)
+        random.shuffle(homoph_selection)
     print('\nEach of the following phoneme combinations has homophones. You have 5 attempts to find them all')
-    for index, combo in enumerate(phoneme_combos):
-        list_hom = phonemes[phoneme]['homophones'][combo].copy()
-        print(f"\n{index+1}. {combo} has {len(list_hom)} homophones")
-        find_homs(combo, list_hom)   
+    for index, homoph in enumerate(homoph_selection):
+        all_spellings = phonemes[phoneme]['homophones'][homoph].copy()
+        print(f"\n{index+1}. {homoph} has {len(all_spellings)} homophones")
+        find_homs(homoph, all_spellings)   
 
        
-def find_homs(combo, list_hom):
+def find_homs(homoph, all_spellings):
+    """Test knowledge of homophones.
+    
+    5 attempts to guess all the spellings of each homophone (amount shown by the app). If failed, the app shows the solutions.
+
+    Args:
+        homoph (str): phonemic transcription to guess the spellings of 
+        all_spellings (set): set of all the homophones of 'homoph'
+    """
     attempts = 5
-    full_len = len(list_hom)
+    full_len = len(all_spellings)
     while attempts > 0:
         answer = input(f'{attempts}. ').lower().strip()
         if not answer.isalpha():
             print('Only letters')
             continue
-        elif answer in list_hom:
-            list_hom.discard(answer)
-            if len(list_hom) == 0:
+        elif answer in all_spellings:
+            all_spellings.discard(answer)
+            if len(all_spellings) == 0:
                 print('All done!')
                 return
-            print(f'Yes! {len(list_hom)} to go')
+            print(f'Yes! {len(all_spellings)} to go')
             attempts -= 1
         else:
             attempts -= 1
-    if len(list_hom) == full_len:
-        print(f"All the homophones of {combo} are {', '.join(list_hom)}")
+    if len(all_spellings) == full_len:
+        print(f"All the homophones of {homoph} are {', '.join(all_spellings)}")
     else:
-        print(f"The remaining homophones of {combo} are {', '.join(list_hom)}")
+        print(f"The remaining homophones of {homoph} are {', '.join(all_spellings)}")
     
     
 def save_progress(phoneme, seen):
+    """Save phoneme studied to a JSON file for future review and to avoid repetition.
+
+    Args:
+        phoneme (str): phoneme being studied
+        seen (list): list of previously studied phonemes
+    """
     if phoneme not in seen:
         seen.append(phoneme)
     data = {'Phonemes seen' : seen}
@@ -174,6 +232,13 @@ def save_progress(phoneme, seen):
 
        
 def load_progress():
+    """Look for JSON file with previously covered phonemes. If None, return an empty list.
+
+    Returns:
+        list : List of previously covered phonemes, or an empty list if the file doesn't exist. 
+               A LIST is returned instead of a SET because the amount of elements is very limited (even when scaled up),
+               making O(n) membership lookup less impactful than set overhead. 
+    """
     try:
         with open(file_path) as f:
             data = json.load(f)
@@ -183,6 +248,11 @@ def load_progress():
 
 
 def review(seen):
+    """Trigger review of all previously covered phonemes through 'review_spell()' and 'review_homophones()'.
+
+    Args:
+        seen (list): list of previously studied phonemes
+    """
     print(f'\nPhonemes covered so far: {', '.join(seen)}\n')
     
     review_spell(seen)
@@ -191,6 +261,14 @@ def review(seen):
     
     
 def review_spell(seen):
+    """Review spelling of previously covered words based on their phonemic transcription.
+    
+    Create a dictionary with 2 words for each phoneme covered, which are then shuffled. Key = phonemic transcription, Value = [phoneme, correct spelling].
+    'test_no_help()' and 'test_with_help()' are called just like when learning a new phoneme.
+
+    Args:
+        seen (list): list of previously covered phonemes
+    """
     matches = {}
     for phoneme in seen:
         guesses_list = list(phonemes[phoneme]['spelling'])
@@ -198,7 +276,6 @@ def review_spell(seen):
 
         for word in two_guesses:
             matches[word] = [phoneme, phonemes[phoneme]['spelling'][word][0]]
-    
     words_to_guess = list(matches)
     random.shuffle(words_to_guess)
     retry_review = []
@@ -213,6 +290,14 @@ def review_spell(seen):
             
             
 def review_homophones(seen):
+    """Review homophones of previously covered phonemes.
+    
+    Create a dictionary with 2 words for each phoneme, which are then shuffled. Key = word to spell, Value = phoneme.
+    'find_homs()' is called just like with a new phoneme.
+
+    Args:
+        seen (list): list of previously covered phonemes
+    """
     homophones_pool = {}
     for phoneme in seen:
         hom_list = list(phonemes[phoneme]['homophones'])
@@ -224,19 +309,31 @@ def review_homophones(seen):
     random.shuffle(homophones_to_guess)
     
     print('\nEach of the following phoneme combinations has homophones. You have 5 attempts to find them all')
-    for index, combo in enumerate(homophones_to_guess):
-        list_hom = phonemes[homophones_pool[combo]]['homophones'][combo].copy()
-        print(f"\n{index+1}. {combo} has {len(list_hom)} homophones")
-        find_homs(combo, list_hom)        
+    for index, homoph in enumerate(homophones_to_guess):
+        all_spellings = phonemes[homophones_pool[homoph]]['homophones'][homoph].copy()
+        print(f"\n{index+1}. {homoph} has {len(all_spellings)} homophones")
+        find_homs(homoph, all_spellings)        
         
         
 def activities(seen):
+    """If 'seen' exists, the app asks if the user just wants to review previous phonemes or learn a new one as well.
+    
+    Review is mandatory and skipping it is purposely not given as an option.
+
+    Args:
+        seen (list): list of previously covered phonemes
+
+    Returns:
+        None : if only 'review' is selected or if no more new phonemes to learn.
+        list : list of remaining new unexplored phonemes to study.
+
+    """
     phonemes_pool = [phoneme for phoneme in phonemes if phoneme not in seen]
     while True:
         ask = input('Do you want to simply review old phonemes or learn a new one as well?  r = only review, l = review and learn: ').lower().strip()
         if ask == 'r':
             review(seen)
-            print('End of review')
+            print('End of review. See you soon!')
             return None
         if ask == 'l':
             review(seen)
@@ -253,6 +350,12 @@ def activities(seen):
             
             
 def main():
+    """Runs the English Pronunciation Trainer.
+    
+    Checks for pre-existing JSON file and enforces review if it exists.
+    Teaches one new phoneme per session through spelling and homophones exercises.
+    Saves phoneme covered to a JSON file
+    """
     print('Welcome to the English Pronunciation Trainer!\n')
     seen = load_progress()
     
@@ -270,6 +373,7 @@ def main():
     spell(phoneme, pron)
     print('\nHOMOPHONES')
     homophones(phoneme = phoneme)
+    print('\nGreat work and see you soon!')
     save_progress(phoneme, seen)
 
 
