@@ -74,7 +74,7 @@ def spell(phoneme, pron):
             else:
                 print('Invalid entry. Only y/n')
             
-    words = random.sample(sorted(phonemes[phoneme]['spelling']), k = 5)
+    words = random.sample(list(phonemes[phoneme]['spelling']), k = 5)
     retry = []
     spell_tests(words, retry, phoneme)
 
@@ -129,7 +129,7 @@ def test_with_help(word, phoneme):
 
 
 def homophones(phoneme):
-    phoneme_combos = sorted(phonemes[phoneme]['homophones'])
+    phoneme_combos = list(phonemes[phoneme]['homophones'])
     if len(phoneme_combos) > 5:
         phoneme_combos = random.sample(phoneme_combos, k = 5)
     else:
@@ -193,7 +193,7 @@ def review(seen):
 def review_spell(seen):
     matches = {}
     for phoneme in seen:
-        guesses_list = sorted(phonemes[phoneme]['spelling'])
+        guesses_list = list(phonemes[phoneme]['spelling'])
         two_guesses = random.sample(guesses_list, k = 2)
 
         for word in two_guesses:
@@ -215,7 +215,7 @@ def review_spell(seen):
 def review_homophones(seen):
     homophones_pool = {}
     for phoneme in seen:
-        hom_list = sorted(phonemes[phoneme]['homophones'])
+        hom_list = list(phonemes[phoneme]['homophones'])
         two_homs = random.sample(hom_list, k = 2)
         
         for hom in two_homs:
@@ -264,7 +264,7 @@ def main():
             return
         
     print('LEARNING')
-    phoneme = random.choice(sorted(phonemes_pool))
+    phoneme = random.choice(list(phonemes_pool))
     pron = learn(phoneme)
     print('\nPRACTICE')
     spell(phoneme, pron)
