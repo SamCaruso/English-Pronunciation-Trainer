@@ -19,7 +19,7 @@ Features:
 
 Modules:
 1. main : core exercises and review. Since the code for review relies heavily on functions defined in the main script, I decided to leave it there instead of moving it to a separate module.
-2. pronunciation_api : handling of the Free Dictionary API to reproduce the sound of phonemes if available """
+2. phoneme_api : handling of the Free Dictionary API to reproduce the sound of phonemes if available """
 
 import random
 from phoneme_api import get_phoneme
@@ -33,17 +33,20 @@ phonemes = {'/ɔ:/' :
     {'patterns' : 
         {'aw' : ('saw', 'yawn', 'draw'), 'ore' : ('core', 'snore', 'before'), 'oar' : ('board', 'coarse', 'soar'), 'or' : ('port', 'absorb', 'corn'), 'au' : ('august', 'autumn', 'flaunt'), 'oor' : ('door', 'floor', 'poor'), 'our' : ('mourn', 'pour', 'four'), 'war' : ('war', 'award', 'swarm')},
         'spelling' : {"/'ɔ:də/" : ('order', 'aurder', 'awder'), "/'kɔ:ʃən/" : ('caution', 'courtion', 'coretion'), "/wɔ:d/" : ('ward', 'word', 'woard'), "/lɔ:ntʃ/" : ('launch', 'lunch', 'lawnch'), "/dɔ:n/" : ('dawn', 'down', 'daun'), "/dʒɔ:/" : ('jaw', 'jore', 'joor'), "/dɪ'vɔ:s/" : ('divorce', 'divauce', 'divawrce'), "/ə'fɔ:d/" : ('afford', 'affawd', 'affaud'), '/stɔ:/' : ('store', 'stoar', 'stour'), "/swɔ:/" : ('swore', 'swar', 'swor')}, 
-        'homophones' : {'/ɔ:/' : {'or', 'oar', 'awe', 'ore'},  '/sɔ:/' : {'saw', 'sore', 'soar'}, '/bɔ:d/' : {'bored', 'board'}, '/flɔ:/' : {'floor', 'flaw'}, '/ʃɔ:/' : {'shore', 'sure'}, '/pɔ:/' : {'poor', 'paw', 'pore', 'pour'}, '/sɔ:s/' : {'sauce', 'source'}, "/'mɔ:nɪŋ/" : {'morning', 'mourning'}, '/stɔ:k/' : {'stalk', 'stork'}, '/wɔ:/' : {'war', 'wore'}}},
+        'homophones' : {'/ɔ:/' : {'or', 'oar', 'awe', 'ore'},  '/sɔ:/' : {'saw', 'sore', 'soar'}, '/bɔ:d/' : {'bored', 'board'}, '/flɔ:/' : {'floor', 'flaw'}, '/ʃɔ:/' : {'shore', 'sure'}, '/pɔ:/' : {'poor', 'paw', 'pore', 'pour'}, '/sɔ:s/' : {'sauce', 'source'}, "/'mɔ:nɪŋ/" : {'morning', 'mourning'}, '/stɔ:k/' : {'stalk', 'stork'}, '/wɔ:/' : {'war', 'wore'}},
+        'api' : 'or'},
     '/ɜ:/' : 
         {'patterns' : 
             {'er + con' : ('alert', 'deserve', 'universe'), 'ir + con' : ('girl', 'third', 'dirt'), 'wor + con' : ('word', 'work', 'worse'), 'ur + con' : ('curl', 'burden', 'lurk'), 'ear + con' : ('pearl', 'hearse', 'learn')}, 
             'spelling' : {'/wɜ:m/' : ('worm', 'warm', 'werm'), '/ʃɜ:t/' : ('shirt', 'shert', 'short'), '/bɜ:st/' : ('burst', 'birst', 'berst'), '/pɜ:k/' : ('perk', 'purk', 'pirk'), '/fɜ:m/' : ('firm', 'furm', 'ferm')}, 
-            'homophones' : {'/hɜ:d/' : {'heard', 'herd'}, '/fɜ:/' : {'fir', 'fur'}, '/wɜ:d/' : {'word', 'whirred'}, '/kɜ:b/' : {'kerb', 'curb'}}},
+            'homophones' : {'/hɜ:d/' : {'heard', 'herd'}, '/fɜ:/' : {'fir', 'fur'}, '/wɜ:d/' : {'word', 'whirred'}, '/kɜ:b/' : {'kerb', 'curb'}}, 
+            'api' : 'err'},
         '/eə/' : {
             'patterns' : {
                 'are' : ('care', 'stare', 'ware'), 'air' : ('affair', 'chair', 'repair'), 'ear' : ('swear', 'pear', 'bear')},
             'spelling' : {'/leə/' : ('lair', 'lare', 'lere'), '/preə/' : ('prayer', 'prare', 'prair'), "/ˌvedʒə'teəriən/" : ('vegetarian', 'vegetearian', 'vegetairian'), "/'peərənt/" : ('parent', 'pairent', 'perent'), "/'veəri/" : ('vary', 'very', 'veary')},
-            'homophones' : {'/feə/' : {'fair', 'fare'}, '/peə/' : {'pare', 'pair', 'pear'}, '/heə/' : {'hair', 'hare'}, '/steə/' : {'stare', 'stair'}, '/fleə/' : {'flair', 'flare'}}
+            'homophones' : {'/feə/' : {'fair', 'fare'}, '/peə/' : {'pare', 'pair', 'pear'}, '/heə/' : {'hair', 'hare'}, '/steə/' : {'stare', 'stair'}, '/fleə/' : {'flair', 'flare'}}, 
+            'api' : 'air'
             }}
 
 
@@ -57,9 +60,9 @@ def learn(phoneme):
         bool: True if sound is available, False if not
     """
     print(f'New phoneme = {phoneme}\n')
-    pron = get_phoneme(phoneme)
+    pron = get_phoneme(phonemes[phoneme]['api'])
     if not pron:
-        print('Pronunciation unavailable')
+        print('Pronunciation unavailable\n')
     print('The most common spelling patterns for this phoneme are: \n')
 
     for pattern, example in phonemes[phoneme]['patterns'].items():
@@ -79,7 +82,7 @@ def spell(phoneme, pron):
         while True:
             ask = input('Do you want to listen to the phoneme one more time before we start? (y/n): ').lower().strip()
             if ask == 'y':
-                get_phoneme(phoneme)
+                get_phoneme(phonemes[phoneme]['api'])
                 break
             elif ask == 'n':
                 break
@@ -99,7 +102,7 @@ def spell_tests(words_list, phoneme):
         phoneme (str): phoneme being studied
     """
     retry = []
-    print('Write the word that corresponds to the following phonemes. You have 5 attempts')
+    print('\nWrite the word that corresponds to the following phonemes. You have 5 attempts')
     
     for index, word in enumerate(words_list):
         print(f'{index + 1}. How do you spell {word}?')
