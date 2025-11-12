@@ -41,6 +41,8 @@ def get_phoneme(phoneme):
     
     Only British English pronunciation is accepted for this app, but the Free Dictionary doesn't always have it.
     If that is the case, all possible exceptions are handled and logged so they can return a graceful user-friendly message in the main module.
+    All exceptions related to the 'requests' module are caught as 'RequestException' for simplicity for the user,
+    but all technical details are in 'log_file.py'.
     Only a json file is expected to be returned, so everything else is handled as an exception.
     Since the maximum amount of calls to the API per run is only 2, requests.Session() is intentionally omitted as its overhead is not justified.
     if __name__ == '__main__' is intentionally omitted as this module is meant to be imported.
@@ -71,5 +73,5 @@ def get_phoneme(phoneme):
         return log_error_return(f'for {phoneme} -> Wrong file format: NOT JSON', e)
     except PlaysoundException as e:
         return log_error_return(f'for {phoneme} -> Invalid file format', e)
-    except IndexError as e:
+    except (IndexError, KeyError, TypeError) as e:
         return log_error_return(f'for {phoneme} -> File may have returned a different format from the one expected', e)
