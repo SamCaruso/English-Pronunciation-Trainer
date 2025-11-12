@@ -26,6 +26,10 @@ from phoneme_api import get_phoneme
 import json
 import time
 import os
+import log_file
+import logging
+
+logger = logging.getLogger(__name__)
 
 file_path = os.path.join(os.path.dirname(__file__), 'English_Pronunciation_Trainer.json')
 
@@ -232,6 +236,7 @@ def save_progress(phoneme, seen):
     
     with open(file_path, 'w') as f:
         json.dump(data, f)
+        logger.info(f'{phoneme} successfully saved to {file_path}')
 
        
 def load_progress():
@@ -245,8 +250,10 @@ def load_progress():
     try:
         with open(file_path) as f:
             data = json.load(f)
+            logger.info(f'English_Pronunciation_Trainer.json successfully loaded from {file_path}')
             return data['Phonemes seen']
     except FileNotFoundError:
+        logger.info('Empty list created since English_Pronunciation_Trainer.json does not exist')
         return []
 
 
@@ -337,6 +344,7 @@ def activities(seen):
         if ask == 'r':
             review(seen)
             print('End of review. See you soon!')
+            logger.info('Ending program after review as requested by user')
             return None
         if ask == 'l':
             review(seen)
@@ -344,9 +352,11 @@ def activities(seen):
             if phonemes_pool:
                 print("Now let's learn a new phoneme. Starting in 3 seconds.\n")
                 time.sleep(3)
+                logger.info('Review ended')
                 return phonemes_pool
             else:
                 print('No new phonemes to learn')
+                logger.info('Ending program after review - no new phonemes to learn')
                 return None
         else:
             print('Invalid input. Only r/l')
@@ -359,25 +369,36 @@ def main():
     Teaches one new phoneme per session through spelling and homophones exercises.
     Saves phoneme covered to a JSON file
     """
+    
+    logger.info('App successfully started')
     print('Welcome to the English Pronunciation Trainer!\n')
     seen = load_progress()
     
     if not seen:
         phonemes_pool = list(phonemes)
+        logger.info('No previous progress - starting from scratch')
     else:
+        logger.info('Review started successfully')
         phonemes_pool = activities(seen)
         if not phonemes_pool:
             return
         
     print('LEARNING')
     phoneme = random.choice(list(phonemes_pool))
+    logger.info(f'Starting learning process for phoneme {phoneme}')
     pron = learn(phoneme)
+    
+    logger.info('Starting practice')
     print('\nPRACTICE')
     spell(phoneme, pron)
+    
+    logger.info('Starting homophones')
     print('\nHOMOPHONES')
     homophones(phoneme = phoneme)
+    
     print('\nGreat work and see you soon!')
     save_progress(phoneme, seen)
+    logger.info(f'Session for {phoneme} ended')
 
 
 if __name__ == '__main__':
