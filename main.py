@@ -25,13 +25,13 @@ import random
 from phoneme_api import get_phoneme
 import json
 import time
-import os
+from pathlib import Path
 import log_file
 import logging
 
 logger = logging.getLogger(__name__)
 
-file_path = os.path.join(os.path.dirname(__file__), 'English_Pronunciation_Trainer.json')
+file_path = Path(__file__).parent / 'English_Pronunciation_Trainer.json'
 
 phonemes = {'/ɔ:/' : 
     {'patterns' : 
