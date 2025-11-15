@@ -1,5 +1,5 @@
 """ 
-Testing module for Phoneme_api.py
+Testing module for phoneme_api.py
 
 The first Test Class mocks and tests the API in 'get_phoneme()'.
 The second one tests the behaviour of 'log_error_return()'
