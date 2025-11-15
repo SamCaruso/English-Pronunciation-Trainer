@@ -1,7 +1,8 @@
 """
 Testing module for main.py
 
-Since this is a simple input-cased console app, I mock json file handling and a couple of user-input functions
+Since this is a simple input-cased console app, I mock json file handling and a couple of user-input functions, 
+but I intentionally omit further testing as it would be trivial and repetitive for this type of app
 
 """
 
@@ -139,7 +140,7 @@ class TestWithHelp(unittest.TestCase):
         
         
 class TestFindHoms(unittest.TestCase):
-    """Testing 'find_homs()' based on user input"""
+    """Test 'find_homs()' based on user input"""
     
     def test_all_guessed(self):
         phoneme = '/eə/'
