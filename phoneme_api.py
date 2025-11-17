@@ -59,7 +59,6 @@ def get_uk_audio(data, phoneme):
             if "-uk" in audio:
                 uk_audio = audio
                 logger.info(f'Successful retrieved the audio for {phoneme} through API')
-                print(uk_audio)
                 return uk_audio                         
     return None
 
