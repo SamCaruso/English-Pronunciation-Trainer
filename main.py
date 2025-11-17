@@ -1,92 +1,222 @@
 """
 English Pronunciation Trainer
 
-This console-based app helps the user understand and memorise the most common spelling-pronunciation patterns of English phonemes(=sounds).
+This console-based app helps the user understand and memorise the most common 
+spelling-pronunciation patterns of English phonemes(=sounds).
 
 Overview:
-1.Requires previous technical knowledge of pronunciation and it is based on Standard BRITISH ENGLISH.
-2.Requires an Internet connection to access sounds through the Free Dictionary API.
-3.Introduces one new sound at a time and shows its most common spelling patterns with examples.
-4.Offers randomised spelling exercises.
-5.Drills homophones
+    1.Requires previous technical knowledge of pronunciation and it is based on Standard BRITISH ENGLISH.
+    2.Checks for an internet connection:
+        -Plays audio retrieved through the Free Dictionary API if online.
+        -Marks audio 'offline' and continues.
+        -Updates audio status when the connection is restored.
+    3.Downloads audio file into a local directory if audio is available. 
+    4.Introduces one new sound at a time and shows its most common spelling patterns with examples.
+    5.Offers randomised spelling exercises.
+    6.Drills homophones.
 
 Features:
-1.Progress is saved to a JSON file used for reviewing previously studied sounds.
-2.Only 1 new sound can be studied per session to promote gradual learning.
-3.For the same reason, review at the beginning of every session (after the first one) is enforced and not optional.
-3.The dictionary 'phonemes' and all its content is manually created by me to ensure accuracy.
-4.If the Free Dictionary API doesn't provide the BRITISH ENGLISH version of the sounds, I handle it gracefully by showing that the pronunciation is not available.
+    1.Progress is saved to a JSON file for future review and to avoid repetition.
+    2.Only 1 new phoneme can be studied per session to promote gradual learning.
+    3.Compulsory review of previously studied phonemes at the beginning of each session.
+    3.The dictionary 'phonemes' and all its content are manually curated to ensure accuracy.
+    4.If the Free Dictionary API doesn't provide the BRITISH ENGLISH version of the phoneme, it handles missing audio gracefully.
 
 Modules:
-1. main : core exercises and review. Since the code for review relies heavily on functions defined in the main script, I decided to leave it there instead of moving it to a separate module.
-2. phoneme_api : handling of the Free Dictionary API to reproduce the sound of phonemes if available """
+1. main : core exercises and review. 
+2. phoneme_api : handling of the Free Dictionary API to reproduce the sound of phonemes if available. """
 
 import random
-from phoneme_api import get_phoneme
+from phoneme_api import get_phoneme, log_error_return
 import json
 import time
 from pathlib import Path
 import log_file
 import logging
+from playsound import playsound, PlaysoundException
+import requests
 
 logger = logging.getLogger(__name__)
 
 file_path = Path(__file__).parent / 'English_Pronunciation_Trainer.json'
 
-phonemes = {'/ɔ:/' : 
-    {'patterns' : 
-        {'aw' : ('saw', 'yawn', 'draw'), 'ore' : ('core', 'snore', 'before'), 'oar' : ('board', 'coarse', 'soar'), 'or' : ('port', 'absorb', 'corn'), 'au' : ('august', 'autumn', 'flaunt'), 'oor' : ('door', 'floor', 'poor'), 'our' : ('mourn', 'pour', 'four'), 'war' : ('war', 'award', 'swarm')},
-        'spelling' : {"/'ɔ:də/" : ('order', 'aurder', 'awder'), "/'kɔ:ʃən/" : ('caution', 'courtion', 'coretion'), "/wɔ:d/" : ('ward', 'word', 'woard'), "/lɔ:ntʃ/" : ('launch', 'lunch', 'lawnch'), "/dɔ:n/" : ('dawn', 'down', 'daun'), "/dʒɔ:/" : ('jaw', 'jore', 'joor'), "/dɪ'vɔ:s/" : ('divorce', 'divauce', 'divawrce'), "/ə'fɔ:d/" : ('afford', 'affawd', 'affaud'), '/stɔ:/' : ('store', 'stoar', 'stour'), "/swɔ:/" : ('swore', 'swar', 'swor')}, 
-        'homophones' : {'/ɔ:/' : {'or', 'oar', 'awe', 'ore'},  '/sɔ:/' : {'saw', 'sore', 'soar'}, '/bɔ:d/' : {'bored', 'board'}, '/flɔ:/' : {'floor', 'flaw'}, '/ʃɔ:/' : {'shore', 'sure'}, '/pɔ:/' : {'poor', 'paw', 'pore', 'pour'}, '/sɔ:s/' : {'sauce', 'source'}, "/'mɔ:nɪŋ/" : {'morning', 'mourning'}, '/stɔ:k/' : {'stalk', 'stork'}, '/wɔ:/' : {'war', 'wore'}},
-        'api' : 'or'},
-    '/ɜ:/' : 
-        {'patterns' : 
-            {'er + con' : ('alert', 'deserve', 'universe'), 'ir + con' : ('girl', 'third', 'dirt'), 'wor + con' : ('word', 'work', 'worse'), 'ur + con' : ('curl', 'burden', 'lurk'), 'ear + con' : ('pearl', 'hearse', 'learn')}, 
-            'spelling' : {'/wɜ:m/' : ('worm', 'warm', 'werm'), '/ʃɜ:t/' : ('shirt', 'shert', 'short'), '/bɜ:st/' : ('burst', 'birst', 'berst'), '/pɜ:k/' : ('perk', 'purk', 'pirk'), '/fɜ:m/' : ('firm', 'furm', 'ferm')}, 
-            'homophones' : {'/hɜ:d/' : {'heard', 'herd'}, '/fɜ:/' : {'fir', 'fur'}, '/wɜ:d/' : {'word', 'whirred'}, '/kɜ:b/' : {'kerb', 'curb'}}, 
-            'api' : 'err'},
-        '/eə/' : {
-            'patterns' : {
-                'are' : ('care', 'stare', 'ware'), 'air' : ('affair', 'chair', 'repair'), 'ear' : ('swear', 'pear', 'bear')},
-            'spelling' : {'/leə/' : ('lair', 'lare', 'lere'), '/preə/' : ('prayer', 'prare', 'prair'), "/ˌvedʒə'teəriən/" : ('vegetarian', 'vegetearian', 'vegetairian'), "/'peərənt/" : ('parent', 'pairent', 'perent'), "/'veəri/" : ('vary', 'very', 'veary')},
-            'homophones' : {'/feə/' : {'fair', 'fare'}, '/peə/' : {'pare', 'pair', 'pear'}, '/heə/' : {'hair', 'hare'}, '/steə/' : {'stare', 'stair'}, '/fleə/' : {'flair', 'flare'}}, 
-            'api' : 'air'
-            }}
+phonemes = {
+    '/ɔ:/': {
+        'patterns': {
+            'aw': ('saw', 'yawn', 'draw'),
+            'ore': ('core', 'snore', 'before'),
+            'oar': ('board', 'coarse', 'soar'),
+            'or': ('port', 'absorb', 'corn'),
+            'au': ('august', 'autumn', 'flaunt'),
+            'oor': ('door', 'floor', 'poor'),
+            'our': ('mourn', 'pour', 'four'),
+            'war': ('war', 'award', 'swarm'),
+        },
+        'spelling': {
+            "/'ɔ:də/": ('order', 'aurder', 'awder'),
+            "/'kɔ:ʃən/": ('caution', 'courtion', 'coretion'),
+            '/wɔ:d/': ('ward', 'word', 'woard'),
+            '/lɔ:ntʃ/': ('launch', 'lunch', 'lawnch'),
+            '/dɔ:n/': ('dawn', 'down', 'daun'),
+            '/dʒɔ:/': ('jaw', 'jore', 'joor'),
+            "/dɪ'vɔ:s/": ('divorce', 'divauce', 'divawrce'),
+            "/ə'fɔ:d/": ('afford', 'affawd', 'affaud'),
+            '/stɔ:/': ('store', 'stoar', 'stour'),
+            '/swɔ:/': ('swore', 'swar', 'swor'),
+        },
+        'homophones': {
+            '/ɔ:/': {'or', 'oar', 'awe', 'ore'},
+            '/sɔ:/': {'saw', 'sore', 'soar'},
+            '/bɔ:d/': {'bored', 'board'},
+            '/flɔ:/': {'floor', 'flaw'},
+            '/ʃɔ:/': {'shore', 'sure'},
+            '/pɔ:/': {'poor', 'paw', 'pore', 'pour'},
+            '/sɔ:s/': {'sauce', 'source'},
+            "/'mɔ:nɪŋ/": {'morning', 'mourning'},
+            '/stɔ:k/': {'stalk', 'stork'},
+            '/wɔ:/': {'war', 'wore'},
+        },
+        'api': 'or'
+    },
+    '/ɜ:/': {
+        'patterns': {
+            'er + con': ('alert', 'deserve', 'universe'),
+            'ir + con': ('girl', 'third', 'dirt'),
+            'wor + con': ('word', 'work', 'worse'),
+            'ur + con': ('curl', 'burden', 'lurk'),
+            'ear + con': ('pearl', 'hearse', 'learn'),
+        },
+        'spelling': {
+            '/wɜ:m/': ('worm', 'warm', 'werm'),
+            '/ʃɜ:t/': ('shirt', 'shert', 'short'),
+            '/bɜ:st/': ('burst', 'birst', 'berst'),
+            '/pɜ:k/': ('perk', 'purk', 'pirk'),
+            '/fɜ:m/': ('firm', 'furm', 'ferm'),
+        },
+        'homophones': {
+            '/hɜ:d/': {'heard', 'herd'},
+            '/fɜ:/': {'fir', 'fur'},
+            '/wɜ:d/': {'word', 'whirred'},
+            '/kɜ:b/': {'kerb', 'curb'},
+        },
+        'api': 'err'
+    },
+    '/eə/': {
+        'patterns': {
+            'are': ('care', 'stare', 'ware'),
+            'air': ('affair', 'chair', 'repair'),
+            'ear': ('swear', 'pear', 'bear'),
+        },
+        'spelling': {
+            '/leə/': ('lair', 'lare', 'lere'),
+            '/preə/': ('prayer', 'prarre', 'prair'),
+            "/ˌvedʒə'teəriən/": ('vegetarian', 'vegetearian', 'vegetairian'),
+            "/'peərənt/": ('parent', 'pairent', 'perent'),
+            "/'veəri/": ('vary', 'very', 'veary'),
+        },
+        'homophones': {
+            '/feə/': {'fair', 'fare'},
+            '/peə/': {'pare', 'pair', 'pear'},
+            '/heə/': {'hair', 'hare'},
+            '/steə/': {'stare', 'stair'},
+            '/fleə/': {'flair', 'flare'},
+        },
+        'api': 'air'
+    },
+    '/i:/': {
+        'patterns': {
+            'ee': ('green', 'proceed', 'tree'),
+            'ie': ('believe', 'grief', 'priest'),
+            'ea': ('each', 'bleak', 'dream'),
+            'e.e': ('complete', 'phoneme', 'theme'),
+            'i.e': ('police', 'prestige', 'unique'),
+        },
+        'spelling': {
+            '/tʃi:t/': ('cheat', 'cheet', 'chete'),
+            "/ə'tʃi:v/": ('achieve', 'acheive', 'achive'),
+            '/fli:t/': ('fleet', 'fleat', 'fliet'),
+            "/kən'si:t/": ('conceit', 'conciet', 'concete'),
+            '/pli:/': ('plea', 'plee', 'ply'),
+        },
+        'homophones': {
+            '/si:/': ('sea', 'see'),
+            '/pi:': ('pea', 'pee'),
+            '/bi:t/': ('beet', 'beat'),
+            '/bi:/': ('bee', 'be'),
+            '/ri:d/':('read', 'reed'),
+            '/si:m/': ('seam', 'seem'),
+            '/fli:/': ('flee', 'flea'),
+        },
+        'api': 'e'
+    }
+}
 
+def has_internet():
+    """Checks for an internet connection as it affects how the app behaves. 
 
+    Returns:
+        bool: True if connection exists, False if not.
+    """
+    try:
+        requests.head("https://www.google.com", timeout=3)
+        logger.info('Internet connection available')
+        return True
+    except requests.RequestException:
+        logger.error('No internet connection')
+        return False
+
+ONLINE = has_internet()
+        
 def learn(phoneme):
     """Play sound of phoneme if available through the 'get_phoneme()' API and show its commom spelling patterns.
 
     Args:
-        phoneme (str): phoneme randomly picked from the 'phonemes' dictionary
+        phoneme (str): Phoneme randomly picked from the 'phonemes' dictionary.
 
     Returns:
-        bool: True if sound is available, False if not
+        str | None:
+            - Path to downloaded file if available.
+            - 'offline' if there is no internet connection.
+            - None if audio is unavailable or an error occurred.
     """
+
     print(f'New phoneme = {phoneme}\n')
-    pron = get_phoneme(phonemes[phoneme]['api'])
-    if not pron:
-        print('Pronunciation unavailable\n')
+    if ONLINE:
+        audio = get_phoneme(phonemes[phoneme]['api'])
+        if audio:
+            try:
+                playsound(audio)
+                logger.info(f'Successful reproduction of {phoneme}')
+            except PlaysoundException as e:
+                audio = log_error_return(f'for {phoneme} -> Invalid file format', e)
+        else:
+            print('Audio unavailable\n')
+    else:
+        audio = 'offline'
+        logger.info(f"learn() returns 'offline'")
     print('The most common spelling patterns for this phoneme are: \n')
 
     for pattern, example in phonemes[phoneme]['patterns'].items():
         examples = ', '.join(random.sample(example, k = 2))
         print(f'{pattern.upper()} -> {examples}')
-    return pron
+    return audio
         
 
-def spell(phoneme, pron):
+def spell(phoneme, audio):
     """If the sound is available through the 'get_phoneme()' API, there is a chance to listen to it again, before starting the spelling tests for the target phoneme.
 
     Args:
-        phoneme (str): phoneme being studied
-        pron (bool): True if the sound from 'get_phoneme()' API is available, False if not
+        phoneme (str): Phoneme being studied.
+        audio (str | None):
+            - Path to downloaded file if available.
+            - 'offline' if there is no internet connection.
+            - None if audio is unavailable or an error occurred.
     """
-    if pron:
+    if audio and audio != 'offline':
         while True:
             ask = input('Do you want to listen to the phoneme one more time before we start? (y/n): ').lower().strip()
             if ask == 'y':
-                get_phoneme(phonemes[phoneme]['api'])
+                playsound(audio)
                 break
             elif ask == 'n':
                 break
@@ -102,8 +232,8 @@ def spell_tests(words_list, phoneme):
     """For each word to learn, 'test_no_help()' first and 'test_with_help()' after if needed.
 
     Args:
-        words_list (list): random selection of words to test
-        phoneme (str): phoneme being studied
+        words_list (list): Random selection of words to test.
+        phoneme (str): Phoneme being studied.
     """
     retry = []
     print('\nWrite the word that corresponds to the following phonemes. You have 5 attempts')
@@ -124,9 +254,9 @@ def test_no_help(word, retry_list, phoneme):
     After 5 failed attempts, the word is appended to a 'retry_list' for future furher testing.
 
     Args:
-        word (str): phonemic transcription of the word we need to guess the spelling of
-        retry_list (list): list containing words not guessed after 5 attempts
-        phoneme (str): phoneme being studied
+        word (str): Phonemic transcription of the word we need to guess the spelling of.
+        retry_list (list): List containing words not guessed after 5 attempts.
+        phoneme (str): Phoneme being studied.
     """
     attempts = 5
     while attempts > 0:
@@ -151,8 +281,8 @@ def test_with_help(word, phoneme):
     Only those 3 words are allowed as answers. If the attempts fail, the solution is given by the app.
 
     Args:
-        word (str): phonemic transcription of the word we need to guess the spelling of
-        phoneme (str): phoneme being studied
+        word (str): Phonemic transcription of the word we need to guess the spelling of.
+        phoneme (str): Phoneme being studied.
     """
     attempts = 2
     print('Type in the correct spelling out of these three options. You have 2 attempts\n')
@@ -178,7 +308,7 @@ def homophones(phoneme):
     """Create a sample list of homophones to be tested.
 
     Args:
-        phoneme (str): phoneme being studied
+        phoneme (str): Phoneme being studied.
     """
     homoph_selection = list(phonemes[phoneme]['homophones'])
     if len(homoph_selection) > 5:
@@ -198,8 +328,8 @@ def find_homs(homoph, all_spellings):
     5 attempts to guess all the spellings of each homophone (amount shown by the app). If failed, the app shows the solutions.
 
     Args:
-        homoph (str): phonemic transcription to guess the spellings of 
-        all_spellings (set): set of all the homophones of 'homoph'
+        homoph (str): Phonemic transcription to guess the spellings of.
+        all_spellings (set): Set of all the homophones of 'homoph'.
     """
     attempts = 5
     full_len = len(all_spellings)
@@ -223,29 +353,32 @@ def find_homs(homoph, all_spellings):
         print(f"The remaining homophones of {homoph} are {', '.join(all_spellings)}")
     
     
-def save_progress(phoneme, seen):
+def save_progress(phoneme, seen, audio):
     """Save phoneme studied to a JSON file for future review and to avoid repetition.
 
     Args:
-        phoneme (str): phoneme being studied
-        seen (list): list of previously studied phonemes
+        phoneme (str): Phoneme being studied.
+        seen (dict): Mapping of previously studied phonemes to their audio.
+        audio (str | None):
+            - Path to downloaded file if available.
+            - 'offline' if there is no internet connection.
+            - None if audio is unavailable or an error occurred.
     """
-    if phoneme not in seen:
-        seen.append(phoneme)
+
+    seen[phoneme] = audio
     data = {'Phonemes seen' : seen}
     
     with open(file_path, 'w') as f:
         json.dump(data, f)
-        logger.info(f'{phoneme} successfully saved to {file_path}')
+        logger.info(f'{phoneme} successfully saved/updated to {file_path}')
 
        
 def load_progress():
-    """Look for JSON file with previously covered phonemes. If None, return an empty list.
+    """Look for JSON file with previously covered phonemes.
 
     Returns:
-        list : List of previously covered phonemes, or an empty list if the file doesn't exist. 
-               A LIST is returned instead of a SET because the amount of elements is very limited (even when scaled up),
-               making O(n) membership lookup less impactful than set overhead. 
+        dict : Mapping of previously covered phonemes to their audio.
+               Return an empty dictionary if the file doesn't exist. 
     """
     try:
         with open(file_path) as f:
@@ -253,21 +386,45 @@ def load_progress():
             logger.info(f'English_Pronunciation_Trainer.json successfully loaded from {file_path}')
             return data['Phonemes seen']
     except FileNotFoundError:
-        logger.info('Empty list created since English_Pronunciation_Trainer.json does not exist')
-        return []
+        logger.info('Empty dictionary created since English_Pronunciation_Trainer.json does not exist')
+        return {}
 
 
 def review(seen):
     """Trigger review of all previously covered phonemes through 'review_spell()' and 'review_homophones()'.
 
     Args:
-        seen (list): list of previously studied phonemes
+        seen (dict): Mapping of previously covered phonemes to their audio.
     """
     print(f'\nPhonemes covered so far: {', '.join(seen)}\n')
-    
+    for phoneme in seen:
+        audio = seen[phoneme]
+        if not audio or (audio == 'offline' and not ONLINE):
+            print(f'-{phoneme} : audio unavailable')         
+        elif audio == 'offline' and ONLINE:
+            update_audio(seen, phoneme)
+        else:
+            print(f'-{phoneme}')
+            playsound(seen[phoneme])
+    print()        
     review_spell(seen)
     review_homophones(seen)
     print()
+                
+def update_audio(phoneme, seen):
+    """Update the real status of the audio for each phoneme in the JSON file if an internet connection is accessed.
+
+    Args:
+        phoneme (str): Previously covered phoneme.
+        seen (dict): Mapping of previously covered phonemes to their audio.
+    """
+    audio_sound = get_phoneme(phonemes[phoneme]['api'])
+    if audio_sound:
+        print(f'-{phoneme}')
+        playsound(audio_sound)  
+    else:
+        print(f'-{phoneme} : audio unavailable')
+    save_progress(phoneme, seen, audio_sound)
     
     
 def review_spell(seen):
@@ -277,7 +434,7 @@ def review_spell(seen):
     'test_no_help()' and 'test_with_help()' are called just like when learning a new phoneme.
 
     Args:
-        seen (list): list of previously covered phonemes
+        seen (dict): Mapping of previously covered phonemes to their audio.
     """
     matches = {}
     for phoneme in seen:
@@ -306,7 +463,7 @@ def review_homophones(seen):
     'find_homs()' is called just like with a new phoneme.
 
     Args:
-        seen (list): list of previously covered phonemes
+        seen (dict): Mapping of previously covered phonemes to their audio.
     """
     homophones_pool = {}
     for phoneme in seen:
@@ -331,15 +488,22 @@ def activities(seen):
     Review is mandatory and skipping it is purposely not given as an option.
 
     Args:
-        seen (list): list of previously covered phonemes
+        seen (dict): Mapping of previously covered phonemes to their audio.
 
     Returns:
-        None : if only 'review' is selected or if no more new phonemes to learn.
-        list : list of remaining new unexplored phonemes to study.
-
+        list | None : 
+            - List of remaining new unexplored phonemes to study.
+            - None if only 'review' is selected or if there are no more new phonemes to learn.
     """
     phonemes_pool = [phoneme for phoneme in phonemes if phoneme not in seen]
     while True:
+        if not phonemes_pool:
+            print('There are no new phonemes to learn so we can only review previous ones')
+            review(seen)
+            print('End of review. See you soon!')
+            logger.info('Review ended and ending program as there are no new phonemes to study')
+            return None
+        
         ask = input('Do you want to simply review old phonemes or learn a new one as well?  r = only review, l = review and learn: ').lower().strip()
         if ask == 'r':
             review(seen)
@@ -354,10 +518,6 @@ def activities(seen):
                 time.sleep(3)
                 logger.info('Review ended')
                 return phonemes_pool
-            else:
-                print('No new phonemes to learn')
-                logger.info('Ending program after review - no new phonemes to learn')
-                return None
         else:
             print('Invalid input. Only r/l')
             
@@ -372,6 +532,8 @@ def main():
     
     logger.info('App successfully started')
     print('Welcome to the English Pronunciation Trainer!\n')
+    if not ONLINE:
+        print('We are offline so the audio can not be played\n')
     seen = load_progress()
     
     if not seen:
@@ -386,18 +548,18 @@ def main():
     print('LEARNING')
     phoneme = random.choice(list(phonemes_pool))
     logger.info(f'Starting learning process for phoneme {phoneme}')
-    pron = learn(phoneme)
+    audio = learn(phoneme)
     
     logger.info('Starting practice')
     print('\nPRACTICE')
-    spell(phoneme, pron)
+    spell(phoneme, audio)
     
     logger.info('Starting homophones')
     print('\nHOMOPHONES')
     homophones(phoneme = phoneme)
     
     print('\nGreat work and see you soon!')
-    save_progress(phoneme, seen)
+    save_progress(phoneme, seen, audio)
     logger.info(f'Session for {phoneme} ended')
 
 
