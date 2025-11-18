@@ -33,7 +33,7 @@ import time
 from pathlib import Path
 import log_file
 import logging
-from playsound import playsound, PlaysoundException
+from playsound import playsound
 import requests
 
 logger = logging.getLogger(__name__)
@@ -184,11 +184,8 @@ def learn(phoneme):
     if ONLINE:
         audio = get_phoneme(phonemes[phoneme]['api'])
         if audio:
-            try:
-                playsound(audio)
-                logger.info(f'Successful reproduction of {phoneme}')
-            except PlaysoundException as e:
-                audio = log_error_return(f'for {phoneme} -> Invalid file format', e)
+            playsound(audio)
+            logger.info(f'Successful reproduction of {phoneme}')
         else:
             print('Audio unavailable\n')
     else:

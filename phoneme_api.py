@@ -42,7 +42,7 @@ def log_error_return(msg, e):
 
 
 def get_uk_audio(data, phoneme):
-    """Parse API JSON and return British English audio if available. 
+    """Parse API JSON and return British English audio (.mp3 or .wav) if available. 
 
     Args:
         data (list): Expected JSON format returned by the API.
@@ -51,15 +51,18 @@ def get_uk_audio(data, phoneme):
     Returns:
         str | None:
             - URL of British audio.
-            - None if British audio doesn't exist.
+            - None if British audio doesn't exist or if it is not .mp3/.wav.
     """
     for entry in data:
         for phonetics_block in entry.get('phonetics', []):
             audio = phonetics_block.get('audio', '')
             if "-uk" in audio:
-                uk_audio = audio
-                logger.info(f'Successful retrieved the audio for {phoneme} through API')
-                return uk_audio                         
+                if audio.endswith(('.mp3', '.wav')):
+                    uk_audio = audio
+                    logger.info(f'Successfully retrieved the audio for {phoneme} through API')
+                    return uk_audio                         
+                else:
+                    logger.error(f'Unsupported audio format for {phoneme}: {audio} should be .mp3/.wav')
     return None
 
 
@@ -85,7 +88,6 @@ def download_audio(audio, phoneme):
         logger.info(f'Successful download of audio for {phoneme} in {AUDIO_DIR}')
         return str(local_audio_file)
     except RequestException as e:
-        print('Currently impossible to download audio file')
         return log_error_return(f'Download error for {phoneme}', e)
 
 
@@ -124,8 +126,8 @@ def get_phoneme(phoneme):
         
         audio_online = get_uk_audio(data, phoneme)
         if not audio_online:
-            raise ValueError('Audio not found/provided. Some sounds only provide an American pronunciation but we want a British one')
-        
+            raise ValueError('Audio not found/not British/wrong format')
+
         local_audio_file = download_audio(audio_online, phoneme)    
         return local_audio_file
     except (RequestException, ValueError) as e:
