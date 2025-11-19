@@ -27,7 +27,7 @@ Modules:
 2. phoneme_api : handling of the Free Dictionary API to reproduce the sound of phonemes if available. """
 
 import random
-from phoneme_api import get_phoneme, log_error_return
+from phoneme_api import get_phoneme
 import json
 import time
 from pathlib import Path
@@ -139,19 +139,19 @@ phonemes = {
             '/pli:/': ('plea', 'plee', 'ply'),
         },
         'homophones': {
-            '/si:/': ('sea', 'see'),
-            '/pi:': ('pea', 'pee'),
-            '/bi:t/': ('beet', 'beat'),
-            '/bi:/': ('bee', 'be'),
-            '/ri:d/':('read', 'reed'),
-            '/si:m/': ('seam', 'seem'),
-            '/fli:/': ('flee', 'flea'),
+            '/si:/': {'sea', 'see'},
+            '/pi:': {'pea', 'pee'},
+            '/bi:t/': {'beet', 'beat'},
+            '/bi:/': {'bee', 'be'},
+            '/ri:d/':{'read', 'reed'},
+            '/si:m/': {'seam', 'seem'},
+            '/fli:/': {'flee', 'flea'},
         },
         'api': 'e'
     }
 }
 
-def has_internet():
+def online():
     """Checks for an internet connection as it affects how the app behaves. 
 
     Returns:
@@ -159,13 +159,12 @@ def has_internet():
     """
     try:
         requests.head("https://www.google.com", timeout=3)
-        logger.info('Internet connection available')
+        logger.info('Accessed internet connection')
         return True
     except requests.RequestException:
         logger.error('No internet connection')
         return False
-
-ONLINE = has_internet()
+    
         
 def learn(phoneme):
     """Play sound of phoneme if available through the 'get_phoneme()' API and show its commom spelling patterns.
@@ -181,7 +180,7 @@ def learn(phoneme):
     """
 
     print(f'New phoneme = {phoneme}\n')
-    if ONLINE:
+    if online():
         audio = get_phoneme(phonemes[phoneme]['api'])
         if audio:
             playsound(audio)
@@ -396,10 +395,10 @@ def review(seen):
     print(f'\nPhonemes covered so far: {', '.join(seen)}\n')
     for phoneme in seen:
         audio = seen[phoneme]
-        if not audio or (audio == 'offline' and not ONLINE):
+        if not audio or (audio == 'offline' and not online()):
             print(f'-{phoneme} : audio unavailable')         
-        elif audio == 'offline' and ONLINE:
-            update_audio(seen, phoneme)
+        elif audio == 'offline' and online():
+            update_audio(phoneme, seen)
         else:
             print(f'-{phoneme}')
             playsound(seen[phoneme])
@@ -529,7 +528,7 @@ def main():
     
     logger.info('App successfully started')
     print('Welcome to the English Pronunciation Trainer!\n')
-    if not ONLINE:
+    if not online():
         print('We are offline so the audio can not be played\n')
     seen = load_progress()
     

@@ -105,9 +105,6 @@ def get_phoneme(phoneme):
     Args:
         phoneme (str): phoneme being studied and passed through the main module.
 
-    Raises:
-        ValueError: British Pronunciation is not available
-
     Returns:
         str: Path to the audio file in the local directory.
     """

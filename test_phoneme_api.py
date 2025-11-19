@@ -73,11 +73,7 @@ class TestGetPhoneme(unittest.TestCase):
 
     @patch('phoneme_api.requests.get')
     def test_api_not_called_audio_already_exists(self, mock_get):
-        tempdir = tempfile.TemporaryDirectory()
-        patcher = patch('phoneme_api.AUDIO_DIR', Path(tempdir.name))
-        patcher.start()
-
-        cached_file = Path(tempdir.name) / "phoneme.mp3"
+        cached_file = Path(self.tempdir.name) / "phoneme.mp3"
         cached_file.write_bytes(b'test')
 
         result = get_phoneme('phoneme')
@@ -85,7 +81,6 @@ class TestGetPhoneme(unittest.TestCase):
         self.assertEqual(result, str(cached_file))
         mock_get.assert_not_called()
 
-        patcher.stop()
 
 
     @patch('phoneme_api.requests.get', side_effect = JSONDecodeError('Value expected', '', 0))
