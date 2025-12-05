@@ -7,7 +7,6 @@ if available, from the Free Dictionary API.
 
 Dependencies:
     requests
-    playsound : if 'pip install playsound' does not work, try 'pip install playsound==1.2.2'
 """
 
 import requests

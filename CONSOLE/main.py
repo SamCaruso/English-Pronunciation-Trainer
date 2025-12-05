@@ -21,6 +21,10 @@ Features:
     3.Compulsory review of previously studied phonemes at the beginning of each session.
     3.The dictionary 'phonemes' and all its content are manually curated to ensure accuracy.
     4.If the Free Dictionary API doesn't provide the BRITISH ENGLISH version of the phoneme, it handles missing audio gracefully.
+    
+
+Dependencies:
+    playsound : if 'pip install playsound' does not work, try 'pip install playsound==1.2.2'
 
 Modules:
 1. main : core exercises and review. 
@@ -529,7 +533,7 @@ def main():
     logger.info('App successfully started')
     print('Welcome to the English Pronunciation Trainer!\n')
     if not online():
-        print('We are offline so the audio can not be played\n')
+        print('We are offline so the audio of new sounds can not be played\n')
     seen = load_progress()
     
     if not seen:

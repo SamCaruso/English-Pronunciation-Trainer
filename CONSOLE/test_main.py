@@ -8,7 +8,7 @@ but I intentionally omit further testing as it would be trivial and repetitive f
 
 
 import unittest
-from unittest.mock import patch, Mock, mock_open
+from unittest.mock import patch, mock_open
 import json
 import main
 from io import StringIO
