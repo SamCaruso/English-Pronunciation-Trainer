@@ -144,7 +144,7 @@ phonemes = {
         },
         'homophones': {
             '/si:/': {'sea', 'see'},
-            '/pi:': {'pea', 'pee'},
+            '/pi:/': {'pea', 'pee'},
             '/bi:t/': {'beet', 'beat'},
             '/bi:/': {'bee', 'be'},
             '/ri:d/':{'read', 'reed'},
