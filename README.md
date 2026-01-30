@@ -1,5 +1,9 @@
 # English Pronunciation Trainer
 
+The web implementation lives in Web/ and is under active development.
+Current focus is improving retry/restart behavior, followed by database integration and a TypeScript migration.
+
+CURRENT FULLY-FUNCTIONAL IMPLEMENTATION:
 A console-based Python app that helps users learn and memorise the most common spelling-pronunciation patterns of Standard British English phonemes (=sounds).  
 Practice includes randomised spelling exercises, homophones, and audio playback through the Free Dictionary API.
 
