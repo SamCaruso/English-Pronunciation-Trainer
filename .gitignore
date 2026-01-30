@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment files
+.env
+
+# Logs
+*.log
+
+# Node / frontend
+node_modules/
+dist/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Documents
+*.odt
+*.docx
+*.pdf
