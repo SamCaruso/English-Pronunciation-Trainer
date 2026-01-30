@@ -1,0 +1,61 @@
+html {
+  font-size: 16px;
+}
+
+.test {
+    color: red;
+    font-weight: bold;
+    font-size: 1.6rem;
+}
+
+.solution {
+    color: blue;
+    font-weight: bold;
+    font-style: italic;
+    font-size: 1.6rem;
+}
+
+.steps li {
+    font-size: 1.6rem;
+    font-weight: bold;
+    line-height: 1.8;
+    list-style-type: disc;
+}
+
+.patterns {
+  list-style: none;
+  padding-left: 0;
+  margin: 1em 0;
+  font-size: 1.2rem;
+}
+
+.patterns li {
+  margin: 1em 0;
+  line-height: 1.4;
+}
+
+.feedback {
+  font-size: 1.1rem;
+  font-weight: bold;
+  line-height: 2.4;
+}
+
+.feedback-failed {
+  font-size: 1.1rem;
+  line-height: 1.4;
+  font-weight: normal;
+}
+
+.answer li {
+  font-size: 1.2rem;
+}
+
+.general {
+  font-size: 1.2rem;
+}
+
+.warning {
+  font-size: 1.2rem;
+  font-weight: bold;
+  font-style: italic;
+}
