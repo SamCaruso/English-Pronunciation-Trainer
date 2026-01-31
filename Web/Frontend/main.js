@@ -6,7 +6,8 @@ import {
     fetchLearn, 
     fetchSpell, 
     fetchHomophones,
-    submitAnswer
+    submitAnswer,
+    saveProgress
 } from './fetch.js';
 
 const API_BASE = 'http://127.0.0.1:8000';
@@ -17,9 +18,10 @@ const div = document.getElementById('app');
 let lastAction = null;
 
 const postRestartAttempts = { amount: 2};
-
 const retryAttempts = { amount: 4};
 const restartAttempts = { amount: 2};
+
+let newSoundToStoreInProgress = {};
 
 async function allowRetry(action) { 
     lastAction = action;
@@ -45,7 +47,7 @@ function showError(err) {
 }
 
 
-function postError(err, input, feedback, retryBtn, host, resolve, postRetryAttempts, postRestartAttempts) {
+function postError(err, input, feedback, retryBtn, host, resolve, postRetryAttempts) {
     showError(err);
 
     if (postRetryAttempts.amount === 0 || postRestartAttempts.amount === 0) {
@@ -85,12 +87,19 @@ function getError(err, container, retryAttempts, action) {
 
     showError(err);
 
+    if (retryAttempts.amount <= 0 || restartAttempts.amount <= 0) {
+        const feedback = document.createElement('div');
+        feedback.textContent =  'The app is not responding correctly. Please exit and try again later';
+        feedback.className = 'feedback';
+        container.append(feedback);
+        return;
+    }
+
     const retry = err?.name === 'APIError' && err.retry === true && typeof action === 'function';
     
     if (retry) {
         const btn = document.createElement('button');
         btn.textContent = 'Retry';
-        btn.disabled = retryAttempts.amount <= 0;
 
         btn.addEventListener('click', async () => {
             if (retryAttempts.amount <= 0) return;
@@ -108,7 +117,6 @@ function getError(err, container, retryAttempts, action) {
     } else {
         const btn = document.createElement('button');
         btn.textContent = 'Restart';
-        btn.disabled = restartAttempts.amount <= 0;
 
         btn.addEventListener('click', () => {
             if (restartAttempts.amount <= 0) return;
@@ -120,13 +128,7 @@ function getError(err, container, retryAttempts, action) {
         container.append(btn);
     }
 
-    if (retryAttempts.amount <= 0 || restartAttempts.amount <= 0) {
-        const feedback = document.createElement('div');
-        feedback.textContent =  'The app is not responding correctly. Please exit and try again later';
-        feedback.className = 'feedback';
-        container.append(feedback);
-        return;
-    }
+    
 }
 
 function begin(div) {
@@ -183,7 +185,10 @@ async function review(div) {
 
                     div.append(heading, phonemes);
 
-                    await spell(words, div, {reviewRound: true, onDone: resolve});  
+                    const exerciseHost = document.createElement('div');
+                    div.append(exerciseHost);
+
+                    await spell(words, exerciseHost, {reviewRound: true, onDone: resolve});  
                 });
                 
             } catch(err) {
@@ -247,10 +252,12 @@ async function learn(div) {
     div.replaceChildren();
 
     const phoneme = await fetchLearn();
+
+    newSoundToStoreInProgress[phoneme.phoneme] = phoneme.audio_url;
     
     const intro = document.createElement('h2');
     intro.style.color = 'rgb(138, 0, 231)';
-    intro.textContent = `New phoneme = /${phoneme['phoneme']}/  `;
+    intro.textContent = `New phoneme = /${phoneme.phoneme}/  `;
 
     const audioBtn = playAudio(phoneme);
 
@@ -384,12 +391,12 @@ async function spell(words, exerciseHost, {reviewRound = false, phoneme = null, 
 
             if (!reviewRound) {
                 const homophsToTest = await fetchHomophones(phoneme.phoneme);
-                await homophones(homophsToTest, div, host);
+                await homophones(homophsToTest, host);
                 return;
             }
 
             const homophsToReview = await fetchReviewHomoph();
-            await homophones(homophsToReview, div, host, {reviewRound: true});
+            await homophones(homophsToReview, host, {reviewRound: true});
             const done = document.createElement('p');
             done.className = 'general';
             done.textContent = 'Review completed!';
@@ -468,7 +475,7 @@ async function testNoHelp(word, retry, index, host) {
             } catch(err) {
                 pending = false;
                 
-                postError(err, input, feedback, btn, host, resolve, postRetryAttempts, postRestartAttempts);
+                postError(err, input, feedback, btn, host, resolve, postRetryAttempts);
             }
         });
     });
@@ -555,13 +562,13 @@ async function testHelp(word, host) {
                 return;
             } catch(err) {
                 pending = false;
-                postError(err, input, feedback, btn, host, resolve, postRetryAttempts, postRestartAttempts); 
+                postError(err, input, feedback, btn, host, resolve, postRetryAttempts); 
             }
         });
     });
 }
 
-async function homophones(homophs, div, host, {reviewRound = false} = {}) {
+async function homophones(homophs, host, {reviewRound = false} = {}) {
     let index = 0;
 
     const warning = document.createElement('h3');
@@ -572,11 +579,23 @@ async function homophones(homophs, div, host, {reviewRound = false} = {}) {
         index++;
         await testHomophone(homoph, index, host);
     }
+
     if (!reviewRound) {
-        const bye = document.createElement('p');
-        bye.className = 'general';
-        bye.textContent = 'Well done! Your progress has been saved. See you soon!';
-        host.append(bye);
+        const [[phoneme, audio_url]] = Object.entries(newSoundToStoreInProgress);
+        
+        const retryAction = async () => {
+            await saveProgress(phoneme, audio_url, 'saveProgress');
+            const bye = document.createElement('p');
+            bye.className = 'general';
+            bye.textContent = 'Well done! Your progress has been saved. See you soon!';
+            host.append(bye);
+        };
+
+        try {
+            await retryAction();
+        } catch(err) {
+            getError(err, host, retryAttempts, retryAction);
+        }
     }
 
 }
@@ -701,7 +720,7 @@ async function testHomophone(homoph, index, host) {
             } catch(err) {
                 pending = false;
                 
-                postError(err, input, feedback, btn, host, resolve, postRetryAttempts, postRestartAttempts);
+                postError(err, input, feedback, btn, host, resolve, postRetryAttempts);
             }
         });
     });
