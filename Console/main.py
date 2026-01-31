@@ -42,7 +42,9 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-file_path = Path(__file__).parent / 'English_Pronunciation_Trainer.json'
+DATA_DIR = Path.home() / ".english_pronunciation_trainer"
+
+file_path = DATA_DIR / "progress.json"
 
 phonemes = {
     '/ɔ:/': {
@@ -364,7 +366,7 @@ def save_progress(phoneme, seen, audio):
             - 'offline' if there is no internet connection.
             - None if audio is unavailable or an error occurred.
     """
-
+    file_path.parent.mkdir(parents=True, exist_ok=True)
     seen[phoneme] = audio
     data = {'Phonemes seen' : seen}
     
