@@ -18,16 +18,12 @@ let lastAction = null;
 
 const postRestartAttempts = { amount: 2};
 
-const getGlobalRetryAttempts = { amount: 5};
-const getGlobalRestartAttempts = { amount: 2};
-
-const getLocalRestartAttempts = { amount: 2};
+const retryAttempts = { amount: 4};
+const restartAttempts = { amount: 2};
 
 async function allowRetry(action) { 
     lastAction = action;
     await action();
-
-    getGlobalRetryAttempts.amount = 5;
 }
 
 
@@ -81,18 +77,13 @@ function postError(err, input, feedback, retryBtn, host, resolve, postRetryAttem
 }
 
 
-function getError(err, container, retryAttempts, action, scope) {
+function getError(err, container, retryAttempts, action) {
     container.replaceChildren();
     const errMsg = document.createElement('h2');
     errMsg.textContent = `Something went wrong`;
     container.append(errMsg);
 
     showError(err);
-
-    const restartAttempts = 
-        scope === 'global'
-            ? getGlobalRestartAttempts
-            : getLocalRestartAttempts;
 
     const retry = err?.name === 'APIError' && err.retry === true && typeof action === 'function';
     
@@ -107,9 +98,10 @@ function getError(err, container, retryAttempts, action, scope) {
 
             container.replaceChildren();
             try {
-                await action(); 
+                await action();
+                retryAttempts.amount = 4; 
             } catch (err) {
-                getError(err, container, retryAttempts, action, scope);
+                getError(err, container, retryAttempts, action);
             }
         });
         container.append(btn);
@@ -155,7 +147,7 @@ function begin(div) {
                 await reviewCheck(reviewStatus, div);
             });
         } catch (err) {
-            getError(err, div, getGlobalRetryAttempts, lastAction, 'global');
+            getError(err, div, retryAttempts, lastAction);
         }
     });
 }
@@ -195,7 +187,7 @@ async function review(div) {
                 });
                 
             } catch(err) {
-                getError(err, div, getGlobalRetryAttempts, lastAction, 'global'); 
+                getError(err, div, retryAttempts, lastAction); 
             }
         });
     });
@@ -211,7 +203,7 @@ async function reviewCheck(reviewStatus, div) {
     btn.textContent = 'Learn new phoneme';
 
     btn.addEventListener('click', () => {
-        learn(div).catch(getError); 
+        allowRetry(() => learn(div)).catch(err => getError(err, div, retryAttempts, lastAction)); 
     });
 
     if (!reviewStatus) {
@@ -237,7 +229,7 @@ async function reviewCheck(reviewStatus, div) {
                     await learn(div);
                 });
             } catch(err) {
-                getError(err, div, getGlobalRetryAttempts, lastAction, 'global');
+                getError(err, div, retryAttempts, lastAction);
             }
         }, 1500);
         return;
@@ -288,9 +280,6 @@ async function learn(div) {
     exerciseHost.append(exerciseBtn);
 
     exerciseBtn.addEventListener('click', async () => {
-        exerciseBtn.remove();
-        const localRetryAttempts = { amount: 4 };
-
         const retryAction = async () => {
             const wordsToTest = await fetchSpell(phoneme.phoneme); 
             await spell(wordsToTest, exerciseHost, {phoneme: phoneme}); 
@@ -299,7 +288,7 @@ async function learn(div) {
         try {
             await retryAction();
         } catch(err) {
-            getError(err, exerciseHost, localRetryAttempts, retryAction, 'local');
+            getError(err, exerciseHost, retryAttempts, retryAction);
         }
     });
 }
@@ -358,6 +347,8 @@ function createInput(attempts) {
 
 
 async function spell(words, exerciseHost, {reviewRound = false, phoneme = null, onDone = null} = {}) {
+    exerciseHost.replaceChildren();
+
     let index = 0;
     let retry = [];
 
@@ -388,8 +379,6 @@ async function spell(words, exerciseHost, {reviewRound = false, phoneme = null, 
     host.append(homophBtn);
 
     homophBtn.addEventListener('click', async() => {
-        const localRetryAttempts = { amount: 4 };
-
         const retryAction = async () => {
             host.replaceChildren();
 
@@ -412,7 +401,7 @@ async function spell(words, exerciseHost, {reviewRound = false, phoneme = null, 
         try {
             await retryAction();
         } catch(err) {
-            getError(err, host, localRetryAttempts, retryAction, 'local');
+            getError(err, host, retryAttempts, retryAction);
         }          
     });
 }
@@ -566,7 +555,6 @@ async function testHelp(word, host) {
                 return;
             } catch(err) {
                 pending = false;
-
                 postError(err, input, feedback, btn, host, resolve, postRetryAttempts, postRestartAttempts); 
             }
         });
