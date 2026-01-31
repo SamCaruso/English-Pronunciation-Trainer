@@ -7,7 +7,7 @@ import {
     fetchSpell, 
     fetchHomophones,
     submitAnswer
-} from './fetch1.js';
+} from './fetch.js';
 
 const API_BASE = 'http://127.0.0.1:8000';
 const RESOLVE_TIME = 1500;
@@ -18,16 +18,16 @@ let lastAction = null;
 
 const postRestartAttempts = { amount: 2};
 
-const globalRetryAttempts = { amount: 5};
-const globalRestartAttempts = { amount: 2};
+const getGlobalRetryAttempts = { amount: 5};
+const getGlobalRestartAttempts = { amount: 2};
 
-const localRestartAttempts = { amount: 2};
+const getLocalRestartAttempts = { amount: 2};
 
 async function allowRetry(action) { 
     lastAction = action;
     await action();
 
-    globalRetryAttempts.amount = 5;
+    getGlobalRetryAttempts.amount = 5;
 }
 
 
@@ -52,16 +52,17 @@ function showError(err) {
 function postError(err, input, feedback, retryBtn, host, resolve, postRetryAttempts, postRestartAttempts) {
     showError(err);
 
-    if (postRetryAttempts === 0 || postRestartAttempts.amount === 0) {
+    if (postRetryAttempts.amount === 0 || postRestartAttempts.amount === 0) {
         feedback.textContent = 'The app is not responding correctly. Please exit and try again later';
         return;
     }
 
     if (err?.name === 'APIError' && err.retry === false) {
         feedback.textContent = "We can't process your answer (not your fault). Please RESTART the exercise";
+        postRestartAttempts.amount -= 1;
         const restartBtn = document.createElement('button');
         restartBtn.textContent = 'Restart';
-        restartBtn.disabled = true;
+        restartBtn.disabled = false;
         host.append(restartBtn);
         
         restartBtn.addEventListener('click', () => {
@@ -73,13 +74,14 @@ function postError(err, input, feedback, retryBtn, host, resolve, postRetryAttem
     }
 
     input.focus();
+    postRetryAttempts.amount -= 1;
     feedback.textContent = "We can't process your answer (not your fault). Click CHECK again in 1 second";
 
     setTimeout(() => retryBtn.disabled = false, 1000)
 }
 
 
-function getError(err, container, retryAttempts, retryAction, scope) {
+function getError(err, container, retryAttempts, action, scope) {
     container.replaceChildren();
     const errMsg = document.createElement('h2');
     errMsg.textContent = `Something went wrong`;
@@ -89,10 +91,10 @@ function getError(err, container, retryAttempts, retryAction, scope) {
 
     const restartAttempts = 
         scope === 'global'
-            ? globalRestartAttempts
-            : localRestartAttempts;
+            ? getGlobalRestartAttempts
+            : getLocalRestartAttempts;
 
-    const retry = err?.name === 'APIError' && err.retry === true && typeof retryAction === 'function';
+    const retry = err?.name === 'APIError' && err.retry === true && typeof action === 'function';
     
     if (retry) {
         const btn = document.createElement('button');
@@ -105,9 +107,9 @@ function getError(err, container, retryAttempts, retryAction, scope) {
 
             container.replaceChildren();
             try {
-                await retryAction(); 
+                await action(); 
             } catch (err) {
-                getErrorGeneral(err, container, retryAttempts, retryAction, scope);
+                getError(err, container, retryAttempts, action, scope);
             }
         });
         container.append(btn);
@@ -153,7 +155,7 @@ function begin(div) {
                 await reviewCheck(reviewStatus, div);
             });
         } catch (err) {
-            getError(err, div, globalRetryAttempts, lastAction, 'global');
+            getError(err, div, getGlobalRetryAttempts, lastAction, 'global');
         }
     });
 }
@@ -193,7 +195,7 @@ async function review(div) {
                 });
                 
             } catch(err) {
-                getError(err, div, globalRetryAttempts, lastAction, 'global'); 
+                getError(err, div, getGlobalRetryAttempts, lastAction, 'global'); 
             }
         });
     });
@@ -235,7 +237,7 @@ async function reviewCheck(reviewStatus, div) {
                     await learn(div);
                 });
             } catch(err) {
-                getError(err, div, globalRetryAttempts, lastAction, 'global');
+                getError(err, div, getGlobalRetryAttempts, lastAction, 'global');
             }
         }, 1500);
         return;
@@ -277,20 +279,27 @@ async function learn(div) {
         pat.textContent = `${pattern.toUpperCase()} => ${phoneme.patterns[pattern].join(', ')}`;
         ul.append(pat);
     });
+
+    const exerciseHost = document.createElement('div');
+    div.append(ul, exerciseHost);
     
     const exerciseBtn = document.createElement('button');
     exerciseBtn.textContent = 'Start exercises';
-    div.append(ul, exerciseBtn);
+    exerciseHost.append(exerciseBtn);
 
     exerciseBtn.addEventListener('click', async () => {
         exerciseBtn.remove();
+        const localRetryAttempts = { amount: 4 };
+
+        const retryAction = async () => {
+            const wordsToTest = await fetchSpell(phoneme.phoneme); 
+            await spell(wordsToTest, exerciseHost, {phoneme: phoneme}); 
+        };
+
         try {
-            await allowRetry(async () => {
-                const wordsToTest = await fetchSpell(phoneme.phoneme); 
-                await spell(wordsToTest, div, {phoneme: phoneme}); 
-            });
+            await retryAction();
         } catch(err) {
-            getError(err, div, globalRetryAttempts, lastAction, 'global');
+            getError(err, exerciseHost, localRetryAttempts, retryAction, 'local');
         }
     });
 }
@@ -348,7 +357,7 @@ function createInput(attempts) {
 }
 
 
-async function spell(words, div, {reviewRound = false, phoneme = null, onDone = null} = {}) {
+async function spell(words, exerciseHost, {reviewRound = false, phoneme = null, onDone = null} = {}) {
     let index = 0;
     let retry = [];
 
@@ -356,11 +365,11 @@ async function spell(words, div, {reviewRound = false, phoneme = null, onDone = 
         const warning = document.createElement('p');
         warning.textContent = 'Some of the following words may not be spelt with the common patterns above';
         warning.className = 'warning';
-        div.append(warning);
+        exerciseHost.append(warning);
     }
 
     const host = document.createElement('div');
-    div.append(host);
+    exerciseHost.append(host);
 
     for (const word of words) {
         index ++;
@@ -379,7 +388,7 @@ async function spell(words, div, {reviewRound = false, phoneme = null, onDone = 
     host.append(homophBtn);
 
     homophBtn.addEventListener('click', async() => {
-        const localRetryAttempts = { amount: 5};
+        const localRetryAttempts = { amount: 4 };
 
         const retryAction = async () => {
             host.replaceChildren();
@@ -403,7 +412,7 @@ async function spell(words, div, {reviewRound = false, phoneme = null, onDone = 
         try {
             await retryAction();
         } catch(err) {
-            getErrorGeneral(err, host, localRetryAttempts, retryAction, 'local');
+            getError(err, host, localRetryAttempts, retryAction, 'local');
         }          
     });
 }
@@ -427,7 +436,7 @@ async function testNoHelp(word, retry, index, host) {
     await new Promise((resolve) => {
         let pending = false;
         
-        let postRetryAttempts = 5;
+        const postRetryAttempts = { amount: 4 };
 
         btn.addEventListener('click', async() => {
             if (pending) return;
@@ -469,10 +478,6 @@ async function testNoHelp(word, retry, index, host) {
                 return;
             } catch(err) {
                 pending = false;
-
-                const restart = err?.name === 'APIError' && err.retry === false;
-
-                restart ? postRestartAttempts.amount-- : postRetryAttempts--;
                 
                 postError(err, input, feedback, btn, host, resolve, postRetryAttempts, postRestartAttempts);
             }
@@ -503,7 +508,7 @@ async function testHelp(word, host) {
     await new Promise((resolve) => {
         let pending = false;
 
-        let postRetryAttempts = 5;
+        const postRetryAttempts = { amount: 4 };
 
         btn.addEventListener('click', async() => {
             if (pending) return;
@@ -562,11 +567,6 @@ async function testHelp(word, host) {
             } catch(err) {
                 pending = false;
 
-                const restart = err?.name === 'APIError' && err.retry === false;
-
-                restart ? postRestartAttempts.amount-- : postRetryAttempts--;
-                
-                console.log(retry, restart);
                 postError(err, input, feedback, btn, host, resolve, postRetryAttempts, postRestartAttempts); 
             }
         });
@@ -647,7 +647,7 @@ async function testHomophone(homoph, index, host) {
     await new Promise((resolve) => {
         let pending = false;
 
-        let postRetryAttempts = 5;
+        const postRetryAttempts = { amount: 4};
 
         btn.addEventListener('click', async() => {
             if (pending) return;
@@ -712,12 +712,7 @@ async function testHomophone(homoph, index, host) {
                 return;
             } catch(err) {
                 pending = false;
-
-                const restart = err?.name === 'APIError' && err.retry === false;
-
-                restart ? postRestartAttempts.amount-- : postRetryAttempts--;
                 
-                console.log(retry, restart);
                 postError(err, input, feedback, btn, host, resolve, postRetryAttempts, postRestartAttempts);
             }
         });
