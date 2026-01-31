@@ -99,3 +99,15 @@ HomophAnswerResponse = Annotated[
         HomophAnswerFailedAll],
     Field(discriminator='answered')
 ]
+
+
+
+class SaveProgress(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    new_phoneme: StrictStr
+    audio_path: Optional[StrictStr] = None
+    
+
+class SaveProgressResponse(BaseModel):
+    status: Literal['ok']
+    

@@ -9,7 +9,8 @@ const ENDPOINTS = {
     spell: '/spell/',
     homophones: '/homophones/',
     checkSpellAnswer: '/checkspellanswer',
-    checkHomophAnswer: '/checkhomophanswer'
+    checkHomophAnswer: '/checkhomophanswer',
+    saveProgress: '/saveprogress'
 };
 
 
@@ -128,6 +129,27 @@ export const fetchHomophones = (phoneme) =>
 
 
 export const submitAnswer = (test_id, answer, endpoint, idempotencyKey) => 
-    fetchValidate({key: endpoint, type: 'object', init: {method: 'POST', 
-        body: JSON.stringify({test_id, answer}),
-        headers: {'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey}}})
+    fetchValidate({
+        key: endpoint, 
+        type: 'object', 
+        init: {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', 
+                'Idempotency-Key': idempotencyKey
+            },
+            body: JSON.stringify({test_id, answer})
+        }
+    });
+
+
+export const saveProgress = (new_phoneme, audio_path, endpoint) =>
+    fetchValidate({
+        key: endpoint, 
+        type: 'object', 
+        init: {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({new_phoneme, audio_path})
+        }
+    });

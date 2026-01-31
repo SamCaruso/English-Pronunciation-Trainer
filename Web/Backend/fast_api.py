@@ -128,4 +128,9 @@ def check_spelling_answer(user_input: s.Answer,
 def check_homoph_answer(user_input: s.Answer,
                         idempotency_key: str = Header(None, alias='Idempotency-Key')):
     return check_idempotency(idempotency_key, user_input, logic.check_homophone_answer)
-    
+
+
+@app.post('/saveprogress', response_model = s.SaveProgressResponse)
+def save(progress: s.SaveProgress):
+    seen = logic.load_progress()
+    return logic.save_progress(progress.model_dump(), seen)
