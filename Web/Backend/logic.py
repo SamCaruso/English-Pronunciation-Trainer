@@ -11,7 +11,10 @@ from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 
-file_path = Path(__file__).parent / 'English_Pronunciation_Trainer.json'
+DATA_DIR = Path.home() / ".english_pronunciation_trainer"
+
+file_path = DATA_DIR / "progress.json"
+
 
 ONGOING_TESTS = {}
 
@@ -36,6 +39,7 @@ def patterns():
 def phonemes_covered():
     seen = load_progress()
     seen_list = []
+    
     for phoneme in seen:
         audio_file = get_phoneme(phonemes[phoneme]['api'])
         audio_url = f'/audio/{Path(audio_file).name}' if audio_file else None
@@ -155,14 +159,23 @@ def homophones_learn(phoneme):
     return create_homophones_test(pairs)
 
     
-def save_progress(phoneme, seen, audio):
+def save_progress(progress, seen):
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    audio_filename = Path(progress['audio_path']).name if progress['audio_path'] else None
 
-    seen[phoneme] = audio
+    seen[progress['new_phoneme']] = audio_filename
     data = {'Phonemes seen' : seen}
     
-    with open(file_path, 'w') as f:
-        json.dump(data, f)
-        logger.info(f'{phoneme} successfully saved/updated to {file_path}')
+    try:
+        with open(file_path, 'w') as f:
+            json.dump(data, f)
+            logger.info(f"{progress['new_phoneme']} successfully saved/updated to {file_path}")
+            
+        return {'status': 'ok'}
+    except OSError:
+        logger.exception("Failed to save progress")
+        raise HTTPException(status_code=500, detail="Failed to save progress")
 
        
 def load_progress():
