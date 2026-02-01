@@ -1,11 +1,26 @@
 # English Pronunciation Trainer
 
-The web implementation lives in Web/ and is under active development.
-Current focus is improving retry/restart behavior, followed by database integration and a TypeScript migration.
+THE WEB IMPLEMENTATION LIVES IN Web/ AND IS UNDER ACTIVE DEVELOPMENT. It is already fully functional and it stores progress locally. My current focus is on database integration and, subsequently, TypeScript migration. 
 
-CURRENT FULLY-FUNCTIONAL IMPLEMENTATION:
+CONSOLE IMPLEMENTATION:
 A console-based Python app that helps users learn and memorise the most common spelling-pronunciation patterns of Standard British English phonemes (=sounds).  
 Practice includes randomised spelling exercises, homophones, and audio playback through the Free Dictionary API.
+
+---
+
+## WEB VERSION: Run locally
+
+This app serves the frontend directly from FastAPI.
+
+### Start the app
+cd Backend
+pip install fastapi uvicorn
+pip install requests
+
+uvicorn fast_api:app --reload
+
+### Open in browser
+http://127.0.0.1:8000/
 
 ---
 
