@@ -14,7 +14,9 @@ This app serves the frontend directly from FastAPI.
 
 ### Start the app
 cd Backend
+
 pip install fastapi uvicorn
+
 pip install requests
 
 uvicorn fast_api:app --reload
