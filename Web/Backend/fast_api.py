@@ -7,7 +7,6 @@ from phonemes_dict import phonemes
 import logging
 import log_file
 from pathlib import Path
-from fastapi.middleware.cors import CORSMiddleware
 import schemas as s
 import time
 
@@ -25,15 +24,6 @@ async def catch_all(request: Request, call_next):
     except Exception:
         return JSONResponse(status_code=500, content={'detail': 'Internal server error'})
     
-    
-app.add_middleware(  # Open CORS for development; restrict in production
-    CORSMiddleware,
-    allow_origins=['*'],
-    allow_credentials=False,
-    allow_methods=['*'],
-    allow_headers=['*'],
-)
-
 
 app.mount('/audio', StaticFiles(directory=AUDIO_DIR), name='audio')
 
@@ -134,3 +124,7 @@ def check_homoph_answer(user_input: s.Answer,
 def save(progress: s.SaveProgress):
     seen = logic.load_progress()
     return logic.save_progress(progress.model_dump(), seen)
+
+FRONTEND_DIR = Path(__file__).resolve().parents[1] / "Frontend"
+
+app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")

@@ -10,7 +10,8 @@ import {
     saveProgress
 } from './fetch.js';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = '';
+
 const RESOLVE_TIME = 1500;
 
 const div = document.getElementById('app');
@@ -311,6 +312,7 @@ function playAudio(phoneme) {
     }
 
     const audio = new Audio(`${API_BASE}${phoneme.audio_url}`);
+
     btn.textContent = '▶️';
 
     audio.onended = () => {
