@@ -24,7 +24,8 @@ Features:
     
 
 Dependencies:
-    playsound : if 'pip install playsound' does not work, try 'pip install playsound==1.2.2'
+    playsound
+    requests
 
 Modules:
 1. main : core exercises and review. 
