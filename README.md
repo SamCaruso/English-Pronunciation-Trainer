@@ -17,7 +17,7 @@ This app serves the frontend directly from FastAPI.
 - pip
 
 ### Install dependencies
-cd Backend 
+cd Web/Backend 
 
 pip install -r requirements.txt
 
@@ -27,6 +27,23 @@ uvicorn fast_api:app --reload
 
 ### Open in browser
 http://127.0.0.1:8000/
+
+---
+
+## CONSOLE VERSION
+
+### Requirements
+- Python 3.10+
+- pip
+
+### Install dependencies
+cd Console 
+
+pip install -r requirements.txt
+
+### Start the app
+
+Running the app on main.py will start the program
 
 ---
 
@@ -40,16 +57,3 @@ http://127.0.0.1:8000/
 - Saves progress in a JSON file for future review.
 - Mandatory review of previously covered phonemes to promote gradual learning.
 - Handles invalid inputs and missing audio (if none exists or simply the British version doesn't) gracefully.
-
----
-
-## Dependencies
-
-- requests -> fetch phoneme audio from the Free Dictionary API
-- playsound (or playsound==1.2.2 to ensure compatibility across platforms) -> play phoneme audio
-
----
-
-## Usage
-
-Running the app on main.py will start the program
