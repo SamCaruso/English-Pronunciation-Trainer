@@ -12,12 +12,15 @@ Practice includes randomised spelling exercises, homophones, and audio playback 
 
 This app serves the frontend directly from FastAPI.
 
+### Requirements
+- Python 3.10+
+- pip
+
+### Install dependencies
+cd Backend 
+pip install -r requirements.txt
+
 ### Start the app
-cd Backend
-
-pip install fastapi uvicorn
-
-pip install requests
 
 uvicorn fast_api:app --reload
 
