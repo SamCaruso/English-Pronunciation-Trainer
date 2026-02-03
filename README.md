@@ -18,6 +18,7 @@ This app serves the frontend directly from FastAPI.
 
 ### Install dependencies
 cd Backend 
+
 pip install -r requirements.txt
 
 ### Start the app
