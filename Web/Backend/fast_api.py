@@ -14,15 +14,6 @@ import time
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
-
-@app.middleware('http')
-async def catch_all(request: Request, call_next):
-    try:
-        return await call_next(request)
-    except HTTPException:
-        raise 
-    except Exception:
-        return JSONResponse(status_code=500, content={'detail': 'Internal server error'})
     
 
 app.mount('/audio', StaticFiles(directory=AUDIO_DIR), name='audio')
